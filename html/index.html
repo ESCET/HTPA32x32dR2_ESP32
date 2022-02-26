@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" type="text/css" href="/style.css">
+    <title>Medical SOS System</title>
+    <script src='/plotly-2.9.0.min.js'></script>
+    
+    <script src="/script.js"></script>
+ 
+     
+    
+    
+</head>
+
+<body>
+
+
+    <div style="width: 500px; height: 500px;" id="heatmap"></div>
+
+    <section class="main-body">
+        <h3>Device Address: <span id="temperature-val">xxxx:xxxx:xxxx:xxxx</span> </h3>
+        <!--0176-->
+
+        <a href="/config-wifi.html">connect to wifi</a>
+    </section>
+    <section class="htpa">
+        <H1>Capture Thermal Image</H1>
+
+        <label for="categories">Category:</label>
+
+        <select name="category" id="category">
+            <option value="stand">Stand</option>
+            <option value="fall">Fall</option>
+            <option value="unoccupied">Unoccupied</option>
+        </select>
+        <button type="button" onclick="htpaCatpure(category)">start</button>
+        <button type="button" onclick="htpaClear()">stop</button>
+ 
+    </section>
+</body>
+ 
+<script>
+
+ 
+
+ 
+
+    let myInterval;
+    let sensor_data_list = []
+
+ </script>
+
+</html>
