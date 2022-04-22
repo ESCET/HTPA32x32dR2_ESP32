@@ -101,7 +101,7 @@ static esp_err_t on_get_htpa_req(httpd_req_t *req)
     
      char * http_message =cJSON_PrintUnformatted(rootJSON);
                 //  printf("array2string: %s \n",http_message);
-
+ 
     // char *message = malloc((sizeof(char)*strlen(message1)+strlen(message2))+10);
     //  printf(    "dd \n");
     //  printf(    "strlen(http_message): %u \n",strlen(*http_message));

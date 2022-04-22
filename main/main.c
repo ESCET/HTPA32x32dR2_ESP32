@@ -103,6 +103,7 @@ void print_info()
 
 void captureHTPADataTask(void *para){
    {
+     initHTPAData();
     while (true)
   {if (xSemaphoreTake(HtpaSemaphore, portMAX_DELAY))
     {
@@ -163,6 +164,6 @@ void app_main(void)
   xSemaphoreGive(initSemaphore);
 
   xTaskCreate(&OnConnected, "handel comms", 1024 * 15, NULL, 5, NULL);
-  xTaskCreate(&captureHTPADataTask, "capture HTPA", 1024 * 100, NULL, 5, NULL);
+  xTaskCreate(&captureHTPADataTask, "capture HTPA", 1024 * 100, NULL, configMAX_PRIORITIES - 1 , NULL);
   // xSemaphoreGive(HtpaSemaphore);
 }

@@ -32,13 +32,14 @@
 
         <label for="categories">Category:</label>
 
-        <select name="category" id="category">
+        <select name="category" id="category" onchange="changeCategory(category)">
             <option value="stand">Stand</option>
             <option value="fall">Fall</option>
             <option value="unoccupied">Unoccupied</option>
         </select>
-        <button type="button" onclick="htpaCatpure(category)">start</button>
-        <button type="button" onclick="htpaClear()">stop</button>
+        <button type="button" onclick="htpaCatpure(category)">capture</button>
+        <button type="button" onclick="htpaClear()">reset</button>
+        <!-- <button type="button" onclick="changeCategory()">changeCategory</button> -->
  
     </section>
 </body>
@@ -51,6 +52,10 @@
 
     let myInterval;
     let sensor_data_list = []
+    let datacounter = 0
+    // let category = null
+
+
 
  </script>
 

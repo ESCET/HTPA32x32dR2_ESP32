@@ -35,8 +35,9 @@ uint32_t id, ptatoff;
 float ptatgr_float, ptatoff_float, pixcmin, pixcmax, bw;
 uint16_t addr_i = 0x0740;
 extern xSemaphoreHandle HTPAReadySemaphore;
+extern xSemaphoreHandle HtpaSemaphore;
 extern cJSON *rootJSON;
-
+uint8_t TRIAL_COUNT = 1.0 ;
 struct characteristics
 {
     uint8_t number_row;    // number of raws
@@ -50,22 +51,23 @@ uint8_t data_top_block0[258], data_top_block1[258], data_top_block2[258], data_t
 uint8_t data_bottom_block0[258], data_bottom_block1[258], data_bottom_block2[258], data_bottom_block3[258];
 uint8_t electrical_offset_top[258], electrical_offset_bottom[258];
 uint16_t eloffset[8][32];
-uint16_t ptat_top_block0, ptat_top_block1, ptat_top_block2, ptat_top_block3;
-uint16_t ptat_bottom_block0, ptat_bottom_block1, ptat_bottom_block2, ptat_bottom_block3;
+double ptat_top_block0, ptat_top_block1, ptat_top_block2, ptat_top_block3;
+double ptat_bottom_block0, ptat_bottom_block1, ptat_bottom_block2, ptat_bottom_block3;
 uint16_t vdd_top_block0, vdd_top_block1, vdd_top_block2, vdd_top_block3;
 uint16_t vdd_bottom_block0, vdd_bottom_block1, vdd_bottom_block2, vdd_bottom_block3;
 uint16_t data_pixel[32][32];
 uint8_t statusreg;
 
 // CALCULATED VALUES
-uint16_t ptat_av_uint16;
-uint16_t vdd_av_uint16;
-uint16_t ambient_temperature;
-int32_t vij_pixc_int32[32][32];
-uint32_t temp_pix_uint32[32][32];
-int32_t vij_comp_int32[32][32];
-int32_t vij_comp_s_int32[32][32];
-int32_t vij_vddcomp_int32[32][32];
+double ptat_av_uint16;
+double vdd_av_uint16;
+double ambient_temperature;
+double vij_pixc_int32[32][32];
+double temp_pix_uint32[32][32];
+double average_temp[32][32];
+double vij_comp_int32[32][32];
+double vij_comp_s_int32[32][32];
+double vij_vddcomp_int32[32][32];
 
 // OTHER
 uint32_t gradscale_div;
@@ -571,32 +573,112 @@ void print_eeprom_hex()
     }
 }
 
-void print_pixel_temps()
+void calc_average_temp()
 {
-
-    rootJSON = cJSON_CreateObject();
-   
-    char array2string[15 * 32 * 32 + 6] = {0};
- 
     for (int m = 0; m < 32; m++)
     {
         for (int n = 0; n < 32; n++)
         {
+            average_temp[m][n] = average_temp[m][n] + temp_pix_uint32[m][n];
+        }
+    }
+}
+void print_pixel_temps_average()
+{
 
-            int len = snprintf(NULL, 0, "%.2f ,", (double)((temp_pix_uint32[m][n] - 2732) / 10.0));
+    rootJSON = cJSON_CreateObject();
+
+    char array2string[15 * 32 * 32 + 6] = {0};
+
+    for (int m = 0; m < 32; m++)
+    {
+        for (int n = 0; n < 32; n++)
+        {
+            // ESP_LOGE(TAG, " %f",temp_pix_uint32[m][n] );
+
+            int len = snprintf(NULL, 0, "%.4f, ", (((temp_pix_uint32[m][n]) ) / 10.0000) - 273.2);
             char *result = malloc(len + 1);
-            if(m == 31 && n == 31){
-            snprintf(result, len + 3, "%.2f", (double)((temp_pix_uint32[m][n] - 2732) / 10.0));
-
-            }else{
-            snprintf(result, len + 3, "%.2f ,", (double)((temp_pix_uint32[m][n] - 2732) / 10.0));
-
+            if (m == 31 && n == 31)
+            {
+                snprintf(result, len + 3, "%.4f", (((temp_pix_uint32[m][n]) ) / 10.0000) - 273.2);
+            }
+            else
+            {
+                snprintf(result, len + 3, "%.4f,", (((temp_pix_uint32[m][n]) ) / 10.0000) - 273.2);
             }
             strcat(array2string, result);
             free(result);
         }
     }
- 
+        // memset(average_temp, 0,   32 * 32 * sizeof(double)  );
+// memset(array, 0, sizeof average_temp);
+
+    cJSON_AddStringToObject(rootJSON, "array", array2string);
+}
+
+void print_pixel_temps()
+{
+
+    rootJSON = cJSON_CreateObject();
+
+    char array2string[15 * 32 * 32 + 6] = {0};
+
+    for (int m = 0; m < 32; m++)
+    {
+        for (int n = 0; n < 32; n++)
+        {
+            // ESP_LOGE(TAG, " %f",temp_pix_uint32[m][n] );
+
+            int len = snprintf(NULL, 0, "%.4f, ", ((temp_pix_uint32[m][n]) / 10.0000) - 273.2);
+            char *result = malloc(len + 1);
+            if (m == 31 && n == 31)
+            {
+                snprintf(result, len + 3, "%.4f", ((temp_pix_uint32[m][n]) / 10.0000) - 273.2);
+            }
+            else
+            {
+                snprintf(result, len + 3, "%.4f,", ((temp_pix_uint32[m][n]) / 10.0000) - 273.2);
+            }
+            strcat(array2string, result);
+            free(result);
+        }
+    }
+
+    cJSON_AddStringToObject(rootJSON, "array", array2string);
+}
+
+void print_pixel_temps2()
+{
+
+    rootJSON = cJSON_CreateObject();
+
+    char array2string[15 * 32 * 32 + 6] = {0};
+
+    for (int m = 0; m < 32; m++)
+    {
+        for (int n = 0; n < 32; n++)
+        {
+            // ESP_LOGE(TAG, " %f",temp_pix_uint32[m][n] );
+
+            int len = snprintf(NULL, 0, "%.4f, ", ((temp_pix_uint32[m][n]) / 10.0000) - 273.2);
+            char *result = malloc(len + 1);
+            if (m == 31 && n == 31)
+            {
+                snprintf(result, len + 3, "%.4f", ((temp_pix_uint32[m][n]) / 10.0000) - 273.2);
+            }
+            else
+            {
+                snprintf(result, len + 3, "%.4f,", ((temp_pix_uint32[m][n]) / 10.0000) - 273.2);
+            }
+            strcat(array2string, result);
+            free(result);
+        }
+        printf("%s\n", array2string);
+        memset(array2string, 0, 15 * 32 * 32 + 6);
+    }
+
+    //   ESP_LOGI(TAG, "-----");
+
     cJSON_AddStringToObject(rootJSON, "array", array2string);
 }
 
@@ -669,7 +751,7 @@ void calculate_pixel_temp()
             // multiply sensitivity coeff for each pixel (see datasheet, chapter: 11.5 Object Temperature)
             vij_pixc_and_pcscaleval = (int64_t)vij_vddcomp_int32[m][n] * (int64_t)PCSCALEVAL;
 
-            vij_pixc_int32[m][n] = (int32_t)(vij_pixc_and_pcscaleval / (int64_t)pixcij_int32[m][n]);
+            vij_pixc_int32[m][n] = (double)(vij_pixc_and_pcscaleval / (int64_t)pixcij_int32[m][n]);
 
             // --- LOOKUPTABLE ---
             // find correct temp for this sensor in lookup table and do a bilinear interpolation (see datasheet, chapter: 11.7 Look-up table)
@@ -677,10 +759,10 @@ void calculate_pixel_temp()
             table_row = table_row >> ADEXPBITS;
             // bilinear interpolation
 
-            vx = ((((int32_t)TempTable[table_row][table_col + 1] - (int32_t)TempTable[table_row][table_col]) * (int32_t)dta) / (int32_t)TAEQUIDISTANCE) + (int32_t)TempTable[table_row][table_col];
+            vx = ((((double)TempTable[table_row][table_col + 1] - (double)TempTable[table_row][table_col]) * (double)dta) / (double)TAEQUIDISTANCE) + (double)TempTable[table_row][table_col];
 
-            vy = ((((int32_t)TempTable[table_row + 1][table_col + 1] - (int32_t)TempTable[table_row + 1][table_col]) * (int32_t)dta) / (int32_t)TAEQUIDISTANCE) + (int32_t)TempTable[table_row + 1][table_col];
-            temp_pix_uint32[m][n] = (uint32_t)((vy - vx) * ((int32_t)(vij_pixc_int32[m][n] + TABLEOFFSET) - (int32_t)YADValues[table_row]) / ydist + (int32_t)vx);
+            vy = ((((double)TempTable[table_row + 1][table_col + 1] - (double)TempTable[table_row + 1][table_col]) * (double)dta) / (double)TAEQUIDISTANCE) + (double)TempTable[table_row + 1][table_col];
+            temp_pix_uint32[m][n] = (double)((vy - vx) * ((double)(vij_pixc_int32[m][n] + TABLEOFFSET) - (double)YADValues[table_row]) / ydist + (double)vx);
 
             // --- GLOBAL OFFSET ---
             temp_pix_uint32[m][n] = temp_pix_uint32[m][n] + globaloff;
@@ -761,13 +843,16 @@ void sort_data()
     // calculate ptat average (datasheet, chapter: 11.1 Ambient Temperature )
     sum = ptat_top_block0 + ptat_top_block1 + ptat_top_block2 + ptat_top_block3 + ptat_bottom_block0 + ptat_bottom_block1 + ptat_bottom_block2 + ptat_bottom_block3;
     ptat_av_uint16 = sum / 8;
-    // printf("ptat: %d %d %d %d %d %d %d %d",ptat_top_block0 , ptat_top_block1 , ptat_top_block2 , ptat_top_block3 , ptat_bottom_block0 , ptat_bottom_block1 , ptat_bottom_block2 , ptat_bottom_block3);
+    // printf("ptat: %d %d %d %d %d %d %d %d\n",ptat_top_block0 , ptat_top_block1 , ptat_top_block2 , ptat_top_block3 , ptat_bottom_block0 , ptat_bottom_block1 , ptat_bottom_block2 , ptat_bottom_block3);
     // calculate ambient_temperature (datasheet, chapter: 11.1 Ambient Temperature )
     ambient_temperature = ptat_av_uint16 * ptatgr_float + ptatoff_float;
+    // printf("ambient_temperature:%f ptat_av_uint16: %f \n", ambient_temperature, ptat_av_uint16);
 
     // calculate vdd average (datasheet, chapter: 11.4 Vdd Compensation )
     sum = vdd_top_block0 + vdd_top_block1 + vdd_top_block2 + vdd_top_block3 + vdd_bottom_block0 + vdd_bottom_block1 + vdd_bottom_block2 + vdd_bottom_block3;
     vdd_av_uint16 = sum / 8;
+    // printf("vdd_av_uint16:%f \n", vdd_av_uint16);
+
     // printf("vdd: %d %d %d %d %d %d %d %d",vdd_top_block0 , vdd_top_block1 , vdd_top_block2 , vdd_top_block3 , vdd_bottom_block0 , vdd_bottom_block1 , vdd_bottom_block2 , vdd_bottom_block3);
 }
 void read_pixel_data()
@@ -806,7 +891,7 @@ void read_pixel_data()
     // wait for end of conversion bit (~27ms)
     vTaskDelay(30 / portTICK_PERIOD_MS); // poll when 90% done
     i2cSensorReadCommand(STATUS_REGISTER, (uint8_t *)&statusreg, 1);
-    ESP_LOGI(TAG, "read_pixel_data5");
+    // ESP_LOGI(TAG, "read_pixel_data5");
 
     while ((statusreg & 0x01) == 0)
     {
@@ -992,6 +1077,12 @@ void read_eeprom()
     clk_calib = read_EEPROM_byte(EEPROM_ADDRESS, E_CLK_CALIB);
     bpa_calib = read_EEPROM_byte(EEPROM_ADDRESS, E_BPA_CALIB);
     pu_calib = read_EEPROM_byte(EEPROM_ADDRESS, E_PU_CALIB);
+    // mbit_user = 12 16bit
+    // bias_user = 5
+    // clk_user = 21
+    // pu_user = 136
+    // bpa_user = 3
+    // REFCAL = 2
     mbit_user = read_EEPROM_byte(EEPROM_ADDRESS, E_MBIT_USER);
     bias_user = read_EEPROM_byte(EEPROM_ADDRESS, E_BIAS_USER);
     clk_user = read_EEPROM_byte(EEPROM_ADDRESS, E_CLK_USER);
@@ -1226,8 +1317,86 @@ void write_calibration_settings_to_sensor()
     vTaskDelay(5 / portTICK_PERIOD_MS);
     i2cSensorCommand(TRIM_REGISTER7, pu_calib);
 }
+void initHTPAData(){
+     ESP_LOGI(TAG, "..... initHTPAData ....");
+    i2c_frequency = CLOCK_EEPROM;
+    i2c_driver_install(i2c_port, I2C_MODE_MASTER, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
+    i2c_master_driver_initialize();
+    read_eeprom();
+    i2c_driver_delete(i2c_port);
+      i2c_frequency = CLOCK_SENSOR;
 
+    i2c_driver_install(i2c_port, I2C_MODE_MASTER, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
+    i2c_master_driver_initialize();
+     i2cSensorCommand(CONFIGURATION_REGISTER, 0x01);
+    write_calibration_settings_to_sensor();
+    gradscale_div = pow(2, gradscale);
+    vddscgrad_div = pow(2, vddscgrad);
+    vddscoff_div = pow(2, vddscoff);
+    calculate_pixcij();
+}
 void captureHTPAData()
+{
+    ESP_LOGI(TAG, "..... captureHTPAData ....");
+    // i2c_frequency = CLOCK_EEPROM;
+    // i2c_driver_install(i2c_port, I2C_MODE_MASTER, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
+    // i2c_master_driver_initialize();
+    // read_eeprom();
+    // i2c_driver_delete(i2c_port);
+
+    // i2c_frequency = CLOCK_SENSOR;
+
+    // i2c_driver_install(i2c_port, I2C_MODE_MASTER, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
+    // i2c_master_driver_initialize();
+
+    // i2cSensorCommand(CONFIGURATION_REGISTER, 0x01);
+    // write_calibration_settings_to_sensor();
+    // gradscale_div = pow(2, gradscale);
+    // vddscgrad_div = pow(2, vddscgrad);
+    // vddscoff_div = pow(2, vddscoff);
+    // calculate_pixcij();
+    if (tablenumber != TABLENUMBER)
+    {
+        printf("\n\nHINT:\tConnected sensor does not match the selected look up table.");
+        printf("\n\tThe calculated temperatures could be wrong!");
+        printf("\n\tChange device in sensordef_32x32.h to sensor with tablenumber ");
+        printf("%u", tablenumber);
+    }
+    else
+    {
+
+        ESP_LOGI(TAG, "read_pixel_data: ");
+        int trials = 0;
+         while (trials < TRIAL_COUNT)
+        {
+            read_pixel_data();
+
+            sort_data();
+
+            calculate_pixel_temp();
+
+            pixel_masking();
+            // calc_average_temp();
+             trials++;
+        }
+       
+
+            print_pixel_temps_average();
+
+                trials = 0;
+      
+
+        // i2cSensorCommand(CONFIGURATION_REGISTER, 0x00); // wakeup & start command
+        //                                                 // print_eeprom_value();
+        // i2c_driver_delete(i2c_port);
+
+        xSemaphoreGive(HTPAReadySemaphore);
+
+        //  vTaskDelay(3000 / portTICK_PERIOD_MS);
+        //  xSemaphoreGive(HtpaSemaphore);
+    }
+}
+void captureHTPAData_1()
 {
     ESP_LOGI(TAG, "..... captureHTPAData ....");
     i2c_frequency = CLOCK_EEPROM;
@@ -1270,9 +1439,12 @@ void captureHTPAData()
         print_pixel_temps();
 
         i2cSensorCommand(CONFIGURATION_REGISTER, 0x00); // wakeup & start command
-
+                                                        // print_eeprom_value();
         i2c_driver_delete(i2c_port);
 
         xSemaphoreGive(HTPAReadySemaphore);
+
+        //  vTaskDelay(3000 / portTICK_PERIOD_MS);
+        //  xSemaphoreGive(HtpaSemaphore);
     }
 }

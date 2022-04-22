@@ -11,19 +11,26 @@ async function downloadBlob(content, filename, contentType) {
   pom.setAttribute('download', filename);
   pom.click();
 }
-async function htpaCatpure(category) {
+
+  function changeCategory(category) {
  
-  let datacounter = 0
-  myInterval =  setInterval(function () {
-     this.extractData(category.value, datacounter)
-    datacounter++
-  }, 3000);
+  datacounter = 0
+  category = category;
+  sensor_data_list = [];
+}
+async function htpaCatpure() {
+ 
+  this.extractData(category.value, datacounter)
+  datacounter++
+  // myInterval =  setInterval(function () {
+    
+  // }, 3000);
 }
 function htpaClear(){
  
-  clearInterval(myInterval);
+  // clearInterval(myInterval);
   sensor_data_list = [];
-
+  datacounter = 0
 }
 async function extractData(category, datacounter) {
   let file_length = 10;
@@ -37,6 +44,8 @@ async function extractData(category, datacounter) {
     
 
 while(sensor_array.length) newArr.push(sensor_array.splice(0,32));
+
+
 var colorscaleValue = [
   [0, '#ffcc00'],
   [1, '#ff0000']
@@ -46,7 +55,9 @@ var data2 = [
   {
     z: newArr,
     type: 'heatmap',
-    colorscale: colorscaleValue,
+    // colorscale: colorscaleValue,
+       colorscale: 'Bluered',
+    // colorscale: 'Hot',
     showscale: false
 
   }

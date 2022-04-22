@@ -11,6 +11,7 @@
 #define WAKEUP_BIT 0x01
 void wakeup();
 void captureHTPAData();
+void initHTPAData();
 esp_err_t eeprom_write_byte(uint8_t deviceaddress, uint16_t eeaddress, uint8_t byte);
 esp_err_t eeprom_write(uint8_t deviceaddress, uint16_t eeaddress, uint8_t *data, size_t size);
 
